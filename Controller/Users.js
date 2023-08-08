@@ -9,7 +9,7 @@ async function isEmailValid(email) {
 
 const SignUp = async (req, res) => {
 	try {
-		const { name, email, password } = req.body;
+		const { email, password } = req.body;
 		const { valid, reason, validators } = await isEmailValid(email);
 		if (valid) {
 			let existingUser = await UserSchema.findOne({
@@ -77,6 +77,7 @@ const Login = async (req, res) => {
 					msg: "successfully logged in",
 					success: true,
 					token: generateToken(existingUser._id, existingUser.email),
+					name:existingUser.name
 				});
 		}
 	} catch (error) {
@@ -89,4 +90,16 @@ const Login = async (req, res) => {
 	}
 };
 
-module.exports = { SignUp, Login };
+const profileComplete = (req, res) => {
+	try {
+		console.log(req.User);
+		console.log(req.body);
+		res.status(201).json({ msg: "profile completed", success: true });
+		
+	} catch (error) {
+		console.log(error);
+		res.status(404).json({msg:"something went wrong",success:false})
+	}
+}
+
+module.exports = { SignUp, Login,profileComplete };
