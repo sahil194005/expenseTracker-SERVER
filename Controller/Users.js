@@ -3,6 +3,7 @@ const ProfileSchema = require("../Models/Profile");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const emailValidator = require("deep-email-validator");
+const nodemailer = require("nodemailer");
 
 async function isEmailValid(email) {
 	return emailValidator.validate(email);
@@ -90,16 +91,6 @@ const Login = async (req, res) => {
 	}
 };
 
-// {
-// 	_id: new ObjectId("64d280bde0ed86ab110f81d0"),
-// 	email: 'sahilkumar2275@gmail.com',
-// 	password: '$2b$10$kjdS5PIV2cw.XOSdSDctO.6ka62qI9/HLgGGNgnAhle49kle73w1O',
-// 	__v: 0
-//   }
-//   {
-// 	name: 'Sahil Kumar',
-// 	image: 'C:\\fakepath\\Screenshot from 2023-08-08 22-39-58.png'
-//   }
 const profileComplete = async (req, res) => {
 	try {
 		const isProfile = await ProfileSchema.findOne({ userId: req.User._id });
@@ -125,4 +116,63 @@ const getProfile = async (req, res) => {
 	}
 };
 
-module.exports = { SignUp, Login, profileComplete, getProfile };
+const forgotPassword = async (req, res) => {
+	try {
+		const { email } = req.body;
+
+		const isUser = await UserSchema.findOne({ email: email });
+
+		if (!isUser) {
+			res.status(404).json({ msg: "no user with this email", success: false });
+		} else {
+			const newid = isUser._id;
+			const transporter = await nodemailer.createTransport({
+				host: "smtp-mail.outlook.com",
+				port: 587,
+				auth: {
+					user: process.env.EMAIL,
+					pass: process.env.EMAIL_PASSWORD,
+				},
+				tls: {
+					ciphers: "SSLv3",
+				},
+			});
+
+			const mailOptions = {
+				from: "lyfesahil@outlook.com",
+				to: email,
+				subject: "Password Reset",
+				text: "Dont worry we will help you get your password back.",
+				html: `<a href="http://localhost:3000/updatePassword/${newid}">click here to reset your password</a>`,
+			};
+
+			transporter.sendMail(mailOptions, (error, info) => {
+				if (error) {
+					console.log(error);
+					res.status(500).json({ msg: `cannot send email `, success: false });
+				} else {
+					res.status(200).json({ msg: `email sent successfully`, success: true });
+				}
+			});
+		}
+	} catch (error) {
+		console.log(error);
+		res.status(404).json({ msg: "couldnt Send mail", success: false });
+	}
+};
+
+const updatePassword = async (req, res) => {
+	try {
+		const { email,password } = req.body;
+		const salt = await bcrypt.genSalt(10);
+		const hashedPassword = await bcrypt.hash(password, salt);
+		const user = await UserSchema.findOneAndUpdate({ email: email }, { password: hashedPassword });
+		
+		res.status(201).json({ msg: "password updated...", success: true });
+	} catch (error) {
+		console.log(error);
+		res.status(404).json({ msg: "couldnt update password", success: false });
+	}
+};
+
+module.exports = { SignUp, Login, profileComplete, getProfile, forgotPassword, updatePassword };
