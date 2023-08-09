@@ -1,11 +1,12 @@
 const UserSchema = require("../Models/Users");
+const ProfileSchema = require("../Models/Profile");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const emailValidator = require("deep-email-validator");
 
 async function isEmailValid(email) {
-	return emailValidator.validate(email)
-  }
+	return emailValidator.validate(email);
+}
 
 const SignUp = async (req, res) => {
 	try {
@@ -34,8 +35,7 @@ const SignUp = async (req, res) => {
 					success: true,
 				});
 			}
-		}
-		else {
+		} else {
 			res.status(403).json({
 				msg: "Please provide valid email address",
 				success: false,
@@ -77,7 +77,7 @@ const Login = async (req, res) => {
 					msg: "successfully logged in",
 					success: true,
 					token: generateToken(existingUser._id, existingUser.email),
-					name:existingUser.name
+					name: existingUser.name,
 				});
 		}
 	} catch (error) {
@@ -90,16 +90,39 @@ const Login = async (req, res) => {
 	}
 };
 
-const profileComplete = (req, res) => {
+// {
+// 	_id: new ObjectId("64d280bde0ed86ab110f81d0"),
+// 	email: 'sahilkumar2275@gmail.com',
+// 	password: '$2b$10$kjdS5PIV2cw.XOSdSDctO.6ka62qI9/HLgGGNgnAhle49kle73w1O',
+// 	__v: 0
+//   }
+//   {
+// 	name: 'Sahil Kumar',
+// 	image: 'C:\\fakepath\\Screenshot from 2023-08-08 22-39-58.png'
+//   }
+const profileComplete = async (req, res) => {
 	try {
-		console.log(req.User);
-		console.log(req.body);
+		const isProfile = await ProfileSchema.findOne({ userId: req.User._id });
+		if (!isProfile) {
+			const response = await ProfileSchema.create({ ...req.body, userId: req.User._id });
+		} else {
+			const response = await ProfileSchema.findOneAndUpdate({ user_id: req.User._id }, req.body);
+		}
 		res.status(201).json({ msg: "profile completed", success: true });
-		
 	} catch (error) {
 		console.log(error);
-		res.status(404).json({msg:"something went wrong",success:false})
+		res.status(404).json({ msg: "something went wrong", success: false });
 	}
-}
+};
 
-module.exports = { SignUp, Login,profileComplete };
+const getProfile = async (req, res) => {
+	try {
+		let response = await ProfileSchema.findOne({ userId: req.User._id });
+		res.status(201).json({ msg: "profile found", success: true, data: response });
+	} catch (error) {
+		console.log(error);
+		res.status(404).json({ msg: "no Profile", success: false });
+	}
+};
+
+module.exports = { SignUp, Login, profileComplete, getProfile };
