@@ -11,4 +11,14 @@ const addExpense = async (req, res) => {
 	}
 };
 
-module.exports = { addExpense };
+
+const getExpenses = async (req, res) => {
+	try {
+		const response = await ExpenseSchema.find({ userId: req.User._id });
+		res.status(201).json({ msg: "Fetched Expenses", success: "true", data: response });
+	} catch (error) {
+		console.log(error);
+		res.status(404).json({ msg: 'could not get expenses', success: false });
+	}
+}
+module.exports = { addExpense,getExpenses };
