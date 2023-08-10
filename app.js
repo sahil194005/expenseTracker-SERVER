@@ -5,7 +5,7 @@ const UserRoute = require('./Routes/Users')
 const ExpensesRoute = require('./Routes/Expenses');
 const connectDB = require("./DB/connect");
 const cors = require('cors');
-const app = Express();
+const app = Express(); 
  
 app.use(cors());
 
