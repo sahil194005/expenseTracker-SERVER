@@ -1,5 +1,5 @@
 const ExpenseSchema = require("../Models/Expenses");
-
+const CsvParser = require("json2csv").Parser;
 const addExpense = async (req, res) => {
 	try {
 		const response = await ExpenseSchema.create({ ...req.body, userId: req.User._id });
@@ -9,7 +9,7 @@ const addExpense = async (req, res) => {
 		res.status(404).json({ msg: "could not add expense", success: false });
 	}
 };
- 
+
 const getExpenses = async (req, res) => {
 	try {
 		const response = await ExpenseSchema.find({ userId: req.User._id });
@@ -30,4 +30,25 @@ const deleteExpense = async (req, res) => {
 		res.status(404).json({ msg: "could not delete expense", success: false });
 	}
 };
-module.exports = { addExpense, getExpenses ,deleteExpense};
+
+const downloadCSV = async (req, res) => {
+	try {
+		const userExpenses = await ExpenseSchema.find({ userId: req.User._id });
+		let ExpensesArr = [];
+		userExpenses.forEach((expense) => {
+			const { amount, description, category } = expense;
+			ExpensesArr.push({ amount, description, category });
+		});
+		const csvFields = ["Amount", "Description", "Category"];
+		const csvParser = new CsvParser({ csvFields });
+		const csvData = csvParser.parse(ExpensesArr);
+		res.setHeader("Content-Type", "text/csv");
+		res.setHeader("Content-Disposition", "attatchment:filename=usersExpenses.csv");
+		res.status(201).end(csvData);
+	} catch (error) {
+		console.log(error);
+		res.status(400).json({ success: false, msg: error });
+	}
+};
+
+module.exports = { addExpense, getExpenses, deleteExpense, downloadCSV };
